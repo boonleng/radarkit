@@ -117,6 +117,7 @@ void RKTestInitializingRadar(void);
 void RKTestTemperatureToStatus(void);
 void RKTestGetCountry(void);
 void RKTestBufferOverviewText(const char *);
+void RKTestHealthOverviewText(const char *);
 void RKTestSweepRead(const char *);
 void RKTestProductRead(const char *);
 void RKTestProductWrite(void);

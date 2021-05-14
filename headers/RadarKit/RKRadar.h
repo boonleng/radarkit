@@ -315,7 +315,7 @@ void RKSetRayReady(RKRadar *, RKRay *);                                         
 RKRay *RKGetLatestRay(RKRadar *);                                                                  // Get the latest ray from the radar
 RKRay *RKGetLatestRayIndex(RKRadar *, uint32_t *);                                                 // Get the latest ray index from the radar
 
-// Waveform Calibrations
+// Waveform calibrations
 void RKAddWaveformCalibration(RKRadar *, const RKWaveformCalibration *);                           // Add a waveform specific calibration
 void RKClearWaveformCalibrations(RKRadar *);                                                       // Clear all waveform calibrations
 void RKConcludeWaveformCalibrations(RKRadar *);                                                    // Declare waveform calibration setup complete
@@ -333,7 +333,8 @@ void RKGetRegisterValue(RKRadar *, void *value, const unsigned long offset, size
 void RKSetRegisterValue(RKRadar *, void *value, const unsigned long offset, size_t size);           // Does not work like the way I expected just yet
 void RKShowOffsets(RKRadar *, char *);                                                              // Does not work like the way I expected just yet
 
-// Buffer overview ASCII art
+// ASCII Art
 int RKBufferOverview(RKRadar *, char *, const RKTextPreferences);                                   // Do you ASCII? :)
+int RKHealthOverview(const char *, char *, const RKTextPreferences);
 
 #endif /* defined(__RadarKit_RKRadar__) */

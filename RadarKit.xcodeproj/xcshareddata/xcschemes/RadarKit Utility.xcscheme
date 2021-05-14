@@ -66,7 +66,7 @@
          </CommandLineArgument>
          <CommandLineArgument
             argument = "-vs1"
-            isEnabled = "YES">
+            isEnabled = "NO">
          </CommandLineArgument>
          <CommandLineArgument
             argument = "-vs2"
@@ -82,11 +82,11 @@
          </CommandLineArgument>
          <CommandLineArgument
             argument = "-w"
-            isEnabled = "YES">
+            isEnabled = "NO">
          </CommandLineArgument>
          <CommandLineArgument
-            argument = "-T43"
-            isEnabled = "NO">
+            argument = "-T22"
+            isEnabled = "YES">
          </CommandLineArgument>
          <CommandLineArgument
             argument = "-T20 /Users/boonleng/Downloads/raxpol/RAXPOL-20210324-192607.rkc"
@@ -98,10 +98,6 @@
          </CommandLineArgument>
          <CommandLineArgument
             argument = "-v -Vaa"
-            isEnabled = "NO">
-         </CommandLineArgument>
-         <CommandLineArgument
-            argument = "-T37"
             isEnabled = "NO">
          </CommandLineArgument>
          <CommandLineArgument

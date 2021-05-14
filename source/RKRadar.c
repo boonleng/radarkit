@@ -3380,3 +3380,105 @@ int RKBufferOverview(RKRadar *radar, char *text, const RKTextPreferences flag) {
     *(text + m) = '\0';
     return m;
 }
+
+char *RKGetNextKeyValue(char *json, char *key, char *value) {
+    char *c = json;
+    char *e = c + strlen(c);
+    char *ks, *ke, *vs, *ve;
+    // Find the next non-space character
+    while (*c == ' ') {
+        c++;
+    }
+    // Find the key
+    ks = c;
+    switch (*ks) {
+        case '"':
+            ks++;
+            ke = strchr(ks, '"');
+            break;
+        case '\'':
+            ks++;
+            ke = strchr(ks, '\'');
+            break;
+        default:
+            ke = strchr(ks, ':');
+            ke--;
+            break;
+    }
+    memcpy(key, ks, ke - ks);
+    key[ke - ks] = '\0';
+    // Find the delimiter ':'
+    c = strchr(ke, ':');
+    if (c == NULL) {
+        fprintf(stderr, "Incomplete string?\n");
+        return 0;
+    }
+    c++;
+    // Find the next non-space character
+    while (*c == ' ') {
+        c++;
+    }
+    // If this is bracketed piece, find the start and end
+    vs = c++;
+    switch (*vs) {
+        case '"':
+            ve = strchr(c, '"');
+            break;
+        case '[':
+            ve = strchr(c, ']');
+            break;
+        case '{':
+            ve = strchr(c, '}');
+            break;
+        case '\'':
+            ve = strchr(c, '\'');
+            break;
+        default:
+            ve = strchr(c, ',');
+            if (ve == NULL) {
+                ve = e;
+            }
+            ve--;
+            break;
+    }
+    memcpy(value, vs, ve - vs + 1);
+    value[ve - vs + 1] = '\0';
+    if (ve == e - 1) {
+        c = NULL;
+    } else {
+        c = ve + 1;
+        while (c < e && (*c == ',' || *c == ' ')) {
+            c++;
+        }
+    }
+    return c;
+}
+
+int RKHealthOverview(const char *json, char *text, const RKTextPreferences flag) {
+    int m;
+    char *c, *e;
+    
+    //static struct winsize terminalSize = {.ws_col = 0, .ws_row = 0};
+
+    char key[RKNameLength];
+    char value[RKStatusStringLength];
+    char string[RKMaximumStringLength];
+
+    // Make a local copy for manipulation
+    strcpy(string, json);
+    
+    //if (flag & RKTextPreferencesDrawBackground) {
+    c = string;
+    e = c + strlen(c);
+    if (*c == '{') {
+        c++;
+    }
+    while (c != NULL) {
+        c = RKGetNextKeyValue(c, key, value);
+        printf("key '%s'   value '%s'  c = %c\n", key, value, c == NULL ? 0 : *c);
+    }
+
+    m = sprintf(text, "Hello World\n");
+    
+    return m;
+}
