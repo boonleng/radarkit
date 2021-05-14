@@ -3385,9 +3385,13 @@ char *RKGetNextKeyValue(char *json, char *key, char *value) {
     char *c = json;
     char *e = c + strlen(c);
     char *ks, *ke, *vs, *ve;
-    // Find the next non-space character
-    while (*c == ' ') {
+    // Forward until the next non-space character
+    while (*c == ' ' && c < e) {
         c++;
+    }
+    if (c == e) {
+        *key = '\0';
+        return NULL;
     }
     // Find the key
     ks = c;
@@ -3411,12 +3415,17 @@ char *RKGetNextKeyValue(char *json, char *key, char *value) {
     c = strchr(ke, ':');
     if (c == NULL) {
         fprintf(stderr, "Incomplete string?\n");
-        return 0;
+        return NULL;
     }
     c++;
     // Find the next non-space character
-    while (*c == ' ') {
+    // Forward until the next non-space character
+    while (*c == ' ' && c < e) {
         c++;
+    }
+    if (c == e) {
+        *value = '\0';
+        return NULL;
     }
     // If this is bracketed piece, find the start and end
     vs = c++;
@@ -3472,6 +3481,9 @@ int RKHealthOverview(const char *json, char *text, const RKTextPreferences flag)
     e = c + strlen(c);
     if (*c == '{') {
         c++;
+    }
+    if (e > c) {
+        *(e - 1) = '\0';
     }
     while (c != NULL) {
         c = RKGetNextKeyValue(c, key, value);
