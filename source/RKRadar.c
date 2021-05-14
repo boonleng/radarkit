@@ -3409,8 +3409,10 @@ char *RKGetNextKeyValue(char *json, char *key, char *value) {
             ke--;
             break;
     }
-    memcpy(key, ks, ke - ks);
-    key[ke - ks] = '\0';
+    if (key) {
+        memcpy(key, ks, ke - ks);
+        key[ke - ks] = '\0';
+    }
     // Find the delimiter ':'
     c = strchr(ke, ':');
     if (c == NULL) {
@@ -3450,8 +3452,10 @@ char *RKGetNextKeyValue(char *json, char *key, char *value) {
             ve--;
             break;
     }
-    memcpy(value, vs, ve - vs + 1);
-    value[ve - vs + 1] = '\0';
+    if (value) {
+        memcpy(value, vs, ve - vs + 1);
+        value[ve - vs + 1] = '\0';
+    }
     if (ve == e - 1) {
         c = NULL;
     } else {
@@ -3464,19 +3468,25 @@ char *RKGetNextKeyValue(char *json, char *key, char *value) {
 }
 
 int RKHealthOverview(const char *json, char *text, const RKTextPreferences flag) {
-    int m;
-    char *c, *e;
+    int m = 0;
+    int nd = 0, nl = 0;
+    char *c, *b, *e;
     
     //static struct winsize terminalSize = {.ws_col = 0, .ws_row = 0};
 
     char key[RKNameLength];
     char value[RKStatusStringLength];
     char string[RKMaximumStringLength];
+    char dots[RKMaximumStringLength], labels[RKMaximumStringLength];
+    char prefix[RKNameLength], posfix[RKNameLength];
+    char state[4];
+    RKStatusEnum u;
 
     // Make a local copy for manipulation
     strcpy(string, json);
     
     //if (flag & RKTextPreferencesDrawBackground) {
+    
     c = string;
     e = c + strlen(c);
     if (*c == '{') {
@@ -3485,12 +3495,57 @@ int RKHealthOverview(const char *json, char *text, const RKTextPreferences flag)
     if (e > c) {
         *(e - 1) = '\0';
     }
+    // Collect status indicators: key-value pairs that have a dictionary as value
     while (c != NULL) {
         c = RKGetNextKeyValue(c, key, value);
-        printf("key '%s'   value '%s'  c = %c\n", key, value, c == NULL ? 0 : *c);
+        //printf("key '%s'   value '%s'  c = %c\n", key, value, c == NULL ? 0 : *c);
+        if (*value == '{') {
+            e = RKGetNextKeyValue(value + 1, NULL, value);
+            RKGetNextKeyValue(e, NULL, state);
+            u = atoi(state);
+            if (rkGlobalParameters.showColor) {
+                strcpy(posfix, RKNoColor);
+                switch (u) {
+                    case RKStatusEnumNormal:
+                        strcpy(prefix, RKGreenColor);
+                        break;
+                    case RKStatusEnumStandby:
+                    case RKStatusEnumLow:
+                        strcpy(prefix, RKOrangeColor);
+                        break;
+                    case RKStatusEnumFault:
+                    case RKStatusEnumTooLow:
+                        strcpy(prefix, RKRedColor);
+                        break;
+                    case RKStatusEnumCritical:
+                        strcpy(prefix, RKHotPinkColor);
+                        break;
+                    case RKStatusEnumUnknown:
+                        strcpy(prefix, RKGrayColor);
+                        break;
+                    default:
+                        strcpy(prefix, RKGrayColor);
+                        break;
+                }
+            } else {
+                prefix[0] = '\0';
+                posfix[0] = '\0';
+            }
+            if (!strcasecmp("true", value) || !strcasecmp("false", value)) {
+                nd += sprintf(dots + nd, "%s%s%s %s\n", prefix, "●", posfix, key);
+            } else {
+                e = value + strlen(value) - 1;
+                if ((*value == '"' && *e == '"') || (*value == '\'' && *e == '\'')) {
+                    *e = '\0';
+                    b = value + 1;
+                } else {
+                    b = value;
+                }
+                nl += sprintf(labels + nl, "%20s : %s%s%s\n", key, prefix, b, posfix);
+            }
+        }
     }
-
-    m = sprintf(text, "Hello World\n");
-    
+    m = sprintf(text, "%s\n", dots);
+    m += sprintf(text + m, "%s\n", labels);
     return m;
 }

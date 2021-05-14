@@ -122,6 +122,7 @@
 #define RKDeepPinkColor                      "\033[38;5;197m"
 #define RKPinkColor                          "\033[38;5;213m"
 #define RKSalmonColor                        "\033[38;5;210m"
+#define RKGrayColor                          "\033[38;5;245m"
 #define RKPythonColor                        "\033[38;5;226;48;5;24m"
 #define RKRadarKitColor                      "\033[38;5;15;48;5;124m"
 #define RKMaximumStringLength                4096
