@@ -521,9 +521,9 @@ int socketStreamHandler(RKOperator *O) {
             // Stream "5" - Buffer overview
             if ((user->streamsInProgress & RKStreamStatusMask) != RKStreamStatusBuffers) {
                 user->streamsInProgress = RKStreamStatusBuffers;
-                k = RKBufferOverview(user->radar, user->string, user->textPreferences | RKTextPreferencesDrawBackground);
+                k = RKBufferOverview(user->string, user->radar, user->textPreferences | RKTextPreferencesDrawBackground);
             } else {
-                k = RKBufferOverview(user->radar, user->string, user->textPreferences);
+                k = RKBufferOverview(user->string, user->radar, user->textPreferences);
             }
             O->delimTx.type = RKNetworkPacketTypePlainText;
             O->delimTx.size = k + 1;

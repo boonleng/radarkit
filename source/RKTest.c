@@ -745,7 +745,7 @@ void RKTestBufferOverviewText(const char *options) {
                  ((textPreferences & RKTextPreferencesWindowSizeMask) == RKTextPreferencesWindowSize80x40 ? "RKTextPreferencesWindowSize80x50" :
                   ((textPreferences & RKTextPreferencesWindowSizeMask) == RKTextPreferencesWindowSize80x25 ? "RKTextPreferencesWindowSize80x25" : ""))))));
     }
-    RKBufferOverview(radar, text, textPreferences);
+    RKBufferOverview(text, radar, textPreferences);
     printf("%s\n", text);
     RKFree(radar);
     free(text);
@@ -753,7 +753,7 @@ void RKTestBufferOverviewText(const char *options) {
 
 void RKTestHealthOverviewText(const char *options) {
     SHOW_FUNCTION_NAME
-    char string[] = "{"
+    char jsonString[] = "{"
     "\"Transceiver\":{\"Value\":true,\"Enum\":0}, "
     "\"Pedestal\":{\"Value\":True,\"Enum\":0}, "
     "\"Health Relay\":{\"Value\":TRUE,\"Enum\":0}, "
@@ -797,11 +797,13 @@ void RKTestHealthOverviewText(const char *options) {
     "\"Platform Pitch\":{\"Value\":\"-0.23 deg\",\"Enum\":0}, "
     "\"Platform Roll\":{\"Value\":\"0.04 deg\",\"Enum\":0}, "
     "\"I2C Chip\":{\"Value\":\"30.50 degC\",\"Enum\":0}, "
+    "\"DC PSU 1\":{\"Value\":true,\"Enum\":0}, "
+    "\"DC PSU 2\":{\"Value\":false,\"Enum\":1}, "
     "\"Event\":\"none\", \"Log Time\":1493410480"
     "}";
-    printf("%s\n", string);
-    char *text = (char *)malloc(8192);
-    RKTextPreferences textPreferences = RKTextPreferencesShowColor | RKTextPreferencesDrawBackground | RKTextPreferencesWindowSize120x80;
+    printf("%s\n", jsonString);
+    char *destiny = (char *)malloc(8192);
+    RKTextPreferences textPreferences = RKTextPreferencesShowColor | RKTextPreferencesDrawBackground | RKTextPreferencesWindowSize80x40;
     if (options) {
         textPreferences = (RKTextPreferences)strtol(options, NULL, 16);
         RKLog("%s options = %s -> 0x%02x\n", __FUNCTION__, options, textPreferences);
@@ -814,12 +816,14 @@ void RKTestHealthOverviewText(const char *options) {
                  ((textPreferences & RKTextPreferencesWindowSizeMask) == RKTextPreferencesWindowSize80x40 ? "RKTextPreferencesWindowSize80x50" :
                   ((textPreferences & RKTextPreferencesWindowSizeMask) == RKTextPreferencesWindowSize80x25 ? "RKTextPreferencesWindowSize80x25" : ""))))));
     }
-    int m = RKHealthOverview(string, text, textPreferences);
-    printf("+--------------------------------------------------------------------+\n");
-    printf("%s", text);
-    printf("+--------------------------------------------------------------------+\n");
-    printf("%d / %d\n", (int)strlen(text), m);
-    free(text);
+    int m;
+    m = RKHealthOverview(destiny, jsonString, textPreferences);
+    printf("%s", destiny);
+    printf("-- %d / %d\n\n", (int)strlen(destiny), m);
+    m = RKHealthOverview(destiny, jsonString, 0);
+    printf("%s", destiny);
+    printf("-- %d / %d\n\n", (int)strlen(destiny), m);
+    free(destiny);
 }
 
 void RKTestSweepRead(const char *file) {

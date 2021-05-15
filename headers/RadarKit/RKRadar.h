@@ -334,7 +334,7 @@ void RKSetRegisterValue(RKRadar *, void *value, const unsigned long offset, size
 void RKShowOffsets(RKRadar *, char *);                                                              // Does not work like the way I expected just yet
 
 // ASCII Art
-int RKBufferOverview(RKRadar *, char *, const RKTextPreferences);                                   // Do you ASCII? :)
-int RKHealthOverview(const char *, char *, const RKTextPreferences);
+int RKBufferOverview(char *, RKRadar *, const RKTextPreferences);                                   // Do you ASCII? :)
+int RKHealthOverview(char *, const char *, const RKTextPreferences);
 
 #endif /* defined(__RadarKit_RKRadar__) */

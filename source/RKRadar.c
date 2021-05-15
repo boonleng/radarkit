@@ -2958,7 +2958,7 @@ void RKShowOffsets(RKRadar *radar, char *text) {
     free(buffer);
 }
 
-int RKBufferOverview(RKRadar *radar, char *text, const RKTextPreferences flag) {
+int RKBufferOverview(char *text, RKRadar *radar, const RKTextPreferences flag) {
     static int slice, positionStride = 1, pulseStride = 1, rayStride = 1, healthStride = 1;
     int i, j, k, m = 0, n = 0;
     char *c;
@@ -3381,10 +3381,10 @@ int RKBufferOverview(RKRadar *radar, char *text, const RKTextPreferences flag) {
     return m;
 }
 
-int RKHealthOverview(const char *json, char *text, const RKTextPreferences flag) {
+int RKHealthOverview(char *text, const char *json, const RKTextPreferences flag) {
     int m = 0;
     int nd = 0, nl = 0;
-    char *c, *b, *e;
+    char *d, *s, *e;
     
     //static struct winsize terminalSize = {.ws_col = 0, .ws_row = 0};
 
@@ -3396,28 +3396,30 @@ int RKHealthOverview(const char *json, char *text, const RKTextPreferences flag)
     char state[4];
     char symbol[] = "o";
     RKStatusEnum u;
+    bool isLabel;
 
     // Make a local copy for manipulation
     strcpy(string, json);
 
     // Skip the very first '{'
-    c = string;
-    e = c + strlen(c);
-    if (*c == '{') {
-        c++;
+    d = string;
+    e = d + strlen(d);
+    if (*d == '{') {
+        d++;
     }
-    if (e > c) {
+    if (e > d) {
         *(e - 1) = '\0';
     }
     // Collect status indicators: key-value pairs that have a dictionary as value
-    while (c != NULL) {
-        c = RKGetNextKeyValue(c, key, value);
+    while (d != NULL) {
+        d = RKGetNextKeyValue(d, key, value);
         //printf("key '%s'   value '%s'  c = %c\n", key, value, c == NULL ? 0 : *c);
         if (*value == '{') {
             e = RKGetNextKeyValue(value + 1, NULL, value);
             RKGetNextKeyValue(e, NULL, state);
             u = atoi(state);
-            if (rkGlobalParameters.showColor) {
+            isLabel = strcasecmp("true", value) && strcasecmp("false", value);
+            if (flag & RKTextPreferencesShowColor) {
                 strcpy(posfix, RKNoForegroundColor);
                 switch (u) {
                     case RKStatusEnumNormal:
@@ -3448,19 +3450,36 @@ int RKHealthOverview(const char *json, char *text, const RKTextPreferences flag)
                     strcpy(symbol, "o");
                 } else {
                     strcpy(symbol, "-");
+                    if (isLabel) {
+                        switch (u) {
+                            case RKStatusEnumStandby:
+                            case RKStatusEnumLow:
+                                sprintf(posfix, " *");
+                                break;
+                            case RKStatusEnumFault:
+                            case RKStatusEnumTooLow:
+                                strcpy(posfix, " **");
+                                break;
+                            case RKStatusEnumCritical:
+                                strcpy(posfix, " ***");
+                                break;
+                            default:
+                                break;
+                        }
+                    }
                 }
             }
-            if (!strcasecmp("true", value) || !strcasecmp("false", value)) {
-                nd += sprintf(dots + nd, "%s%s%s %s\n", prefix, symbol, posfix, key);
-            } else {
+            if (isLabel) {
                 e = value + strlen(value) - 1;
                 if ((*value == '"' && *e == '"') || (*value == '\'' && *e == '\'')) {
                     *e = '\0';
-                    b = value + 1;
+                    s = value + 1;
                 } else {
-                    b = value;
+                    s = value;
                 }
-                nl += sprintf(labels + nl, "%22s %s%s%s\n", key, prefix, b, posfix);
+                nl += sprintf(labels + nl, "%22s %s%s%s\n", key, prefix, s, posfix);
+            } else {
+                nd += sprintf(dots + nd, "%s%s%s %s\n", prefix, symbol, posfix, key);
             }
         }
     }
@@ -3471,11 +3490,39 @@ int RKHealthOverview(const char *json, char *text, const RKTextPreferences flag)
     printf("%s", text);
     #endif
 
-    m = RKMergeColumns(text, dots, labels);
-    
-//    if (flag & RKTextPreferencesDrawBackground) {
-//        <#statements#>
-//    }
+    if (flag & RKTextPreferencesDrawBackground) {
+        int n = 0;
+        char temp[8196];
+        int w = RKMergeColumns(temp, dots, labels, 4);
+        // Another indent at the end and the two border chars
+        w += 4 + 2;
+
+        d = text;
+        // Clear screen, go to the origin
+        m = sprintf(text, "\033[1;1H\033[2J");
+        // Top border
+        *(d + m++) = '+';
+        memset(d + m, '-', w - 2); m += (w - 2);
+        *(d + m++) = '+';
+        *(d + m++) = '\n';
+        // Middle text
+        s = temp;
+        while (*s != '\0' && (e = strchr(s, '\n')) != NULL) {
+            *e = '\0';
+            m += sprintf(d + m, "|%s|\n", s);
+            s = e + 1;
+            n++;
+        }
+        // Bottom border
+        *(d + m++) = '+';
+        memset(d + m, '-', w - 2); m += (w - 2);
+        *(d + m++) = '+';
+        *(d + m++) = '\n';
+        *(d + m) = '\0';
+    } else {
+        RKMergeColumns(text, dots, labels, 0);
+        m = (int)strlen(text);
+    }
 
     return m;
 }

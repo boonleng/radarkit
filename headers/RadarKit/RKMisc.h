@@ -165,6 +165,6 @@ long RKGetMemoryUsage(void);
 char *RKCountryFromPosition(const double latitude, const double longitude);
 
 char *RKGetNextKeyValue(char *json, char *key, char *value);
-int RKMergeColumns(char *text, char *left, char *right);
+int RKMergeColumns(char *, const char *, const char *, const int);
 
 #endif /* rk_misc_h */

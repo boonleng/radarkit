@@ -1235,13 +1235,15 @@ char *RKGetNextKeyValue(char *json, char *key, char *value) {
     return c;
 }
 
-int RKMergeColumns(char *text, char *left, char *right) {
-    char *ls = left, *le = NULL;
-    char *rs = right, *re = NULL;
+int RKMergeColumns(char *text, const char *left, const char *right, const int indent) {
+    const int u = 30; const int v = 38;
+    char *ls = (char *)left, *le = NULL;
+    char *rs = (char *)right, *re = NULL;
+    int w = 0, m = 0, n;
+    char format[indent + 4];
     char *plain;
-    int m = 0, n;
-    const int w = 30; const int v = 36;
-    
+    memset(format, ' ', indent);
+    sprintf(format + indent, "%%s");
     //printf("%s--\n", right);
     while (ls != NULL || rs != NULL) {
         if (ls != NULL && (le = strchr(ls, '\n')) != NULL) {
@@ -1249,23 +1251,24 @@ int RKMergeColumns(char *text, char *left, char *right) {
             plain = RKStripEscapeSequence(ls);
             n = (int)strlen(plain);
             //printf("%s (%d) -> %s (%d)\n", ls, (int)(le - ls), plain, n);
-            m += sprintf(text + m, "%s", ls);
-            memset(text + m, ' ', w - n);
-            m += (w - n);
+            m += sprintf(text + m, format, ls);
+            memset(text + m, ' ', u - n);
+            m += (u - n);
             ls = le + 1;
             if (*ls == '\0') {
                 ls = NULL;
             }
         } else {
             if (rs != NULL) {
-                memset(text + m, ' ', w);
-                m += w;
+                memset(text + m, ' ', u + indent);
+                m += u + indent;
             }
         }
         if (rs != NULL && (re = strchr(rs, '\n')) != NULL) {
             *re = '\0';
             plain = RKStripEscapeSequence(rs);
             n = (int)strlen(plain);
+            w = MAX(w, n);
             //printf("%s (%d) -> %s (%d) |%c|\n", rs, (int)(re - rs), plain, n, *(re + 1));
             m += sprintf(text + m, "%s", rs);
             memset(text + m, ' ', v - n);
@@ -1275,13 +1278,11 @@ int RKMergeColumns(char *text, char *left, char *right) {
                 rs = NULL;
             }
         } else {
-            if (ls != NULL) {
-                memset(text + m, ' ', v);
-                m += v;
-            }
+            memset(text + m, ' ', v);
+            m += v;
         }
         m += sprintf(text + m, "\n");
-        //m += sprintf(text + m, "\033[49m\n");
     }
-    return m;
+    w += u + indent;
+    return w;
 }
