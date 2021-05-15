@@ -3381,92 +3381,6 @@ int RKBufferOverview(RKRadar *radar, char *text, const RKTextPreferences flag) {
     return m;
 }
 
-char *RKGetNextKeyValue(char *json, char *key, char *value) {
-    char *c = json;
-    char *e = c + strlen(c);
-    char *ks, *ke, *vs, *ve;
-    // Forward until the next non-space character
-    while (*c == ' ' && c < e) {
-        c++;
-    }
-    if (c == e) {
-        *key = '\0';
-        return NULL;
-    }
-    // Find the key
-    ks = c;
-    switch (*ks) {
-        case '"':
-            ks++;
-            ke = strchr(ks, '"');
-            break;
-        case '\'':
-            ks++;
-            ke = strchr(ks, '\'');
-            break;
-        default:
-            ke = strchr(ks, ':');
-            ke--;
-            break;
-    }
-    if (key) {
-        memcpy(key, ks, ke - ks);
-        key[ke - ks] = '\0';
-    }
-    // Find the delimiter ':'
-    c = strchr(ke, ':');
-    if (c == NULL) {
-        fprintf(stderr, "Incomplete string?\n");
-        return NULL;
-    }
-    c++;
-    // Find the next non-space character
-    // Forward until the next non-space character
-    while (*c == ' ' && c < e) {
-        c++;
-    }
-    if (c == e) {
-        *value = '\0';
-        return NULL;
-    }
-    // If this is bracketed piece, find the start and end
-    vs = c++;
-    switch (*vs) {
-        case '"':
-            ve = strchr(c, '"');
-            break;
-        case '[':
-            ve = strchr(c, ']');
-            break;
-        case '{':
-            ve = strchr(c, '}');
-            break;
-        case '\'':
-            ve = strchr(c, '\'');
-            break;
-        default:
-            ve = strchr(c, ',');
-            if (ve == NULL) {
-                ve = e;
-            }
-            ve--;
-            break;
-    }
-    if (value) {
-        memcpy(value, vs, ve - vs + 1);
-        value[ve - vs + 1] = '\0';
-    }
-    if (ve == e - 1) {
-        c = NULL;
-    } else {
-        c = ve + 1;
-        while (c < e && (*c == ',' || *c == ' ')) {
-            c++;
-        }
-    }
-    return c;
-}
-
 int RKHealthOverview(const char *json, char *text, const RKTextPreferences flag) {
     int m = 0;
     int nd = 0, nl = 0;
@@ -3485,9 +3399,8 @@ int RKHealthOverview(const char *json, char *text, const RKTextPreferences flag)
 
     // Make a local copy for manipulation
     strcpy(string, json);
-    
-    //if (flag & RKTextPreferencesDrawBackground) {
-    
+
+    // Skip the very first '{'
     c = string;
     e = c + strlen(c);
     if (*c == '{') {
@@ -3557,8 +3470,12 @@ int RKHealthOverview(const char *json, char *text, const RKTextPreferences flag)
     m += sprintf(text + m, "%s\n", labels);
     printf("%s", text);
     #endif
-    
+
     m = RKMergeColumns(text, dots, labels);
+    
+//    if (flag & RKTextPreferencesDrawBackground) {
+//        <#statements#>
+//    }
 
     return m;
 }
