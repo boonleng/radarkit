@@ -60,15 +60,16 @@ char *RKTestByNumberDescription(const int indent) {
     "10 - Internet monitor module - RKHostMonitorInit()\n"
     "11 - Initialize a simple radar system - RKRadarInit()\n"
     "12 - Convert a temperature reading to status\n"
-    "13 - Get a country name from position\n"
+    "13 - Get a country name from a position\n"
     "14 - Generating text for buffer overview\n"
-    "15 - Read a .nc file using RKSweepRead(); -T15 FILENAME\n"
-    "16 - Read a .nc file using RKProductRead(); -T16 FILENAME\n"
-    "17 - Read .nc files using RKProductCollectionInitWithFilename(); -T17 FILENAME\n"
-    "18 - Write a .nc file using RKProductFileWriterNC()\n"
-    "19 - RKTestReviseLogicalValues()\n"
+    "15 - Generating text for health overview\n"
+    "16 - Write a .nc file using RKProductFileWriterNC()\n"
+    "17 - Read a .nc file using RKSweepRead(); -T15 FILENAME\n"
+    "18 - Read a .nc file using RKProductRead(); -T16 FILENAME\n"
+    "19 - Read .nc files using RKProductCollectionInitWithFilename(); -T17 FILENAME\n"
     "20 - Reading a .rkc file; -T20 FILENAME\n"
-    "21 - RKCommandQueue unit test\n"
+    "21 - RKTestReviseLogicalValues()\n"
+    "22 - RKCommandQueue unit test\n"
     "\n"
     "30 - SIMD quick test\n"
     "31 - SIMD test with numbers shown\n"
@@ -155,31 +156,31 @@ void RKTestByNumber(const int number, const void *arg) {
             RKTestBufferOverviewText((char *)arg);
             break;
         case 15:
-            if (arg == NULL) {
-                RKLog("No filename given.\n");
-                exit(EXIT_FAILURE);
-            }
-            RKTestSweepRead((char *)arg);
+            RKTestHealthOverviewText((char *)arg);
             break;
         case 16:
-            if (arg == NULL) {
-                RKLog("No filename given.\n");
-                exit(EXIT_FAILURE);
-            }
-            RKTestProductRead((char *)arg);
+            RKTestProductWrite();
             break;
         case 17:
             if (arg == NULL) {
                 RKLog("No filename given.\n");
                 exit(EXIT_FAILURE);
             }
-            RKProductCollectionInitWithFilename((char *)arg);
+            RKTestSweepRead((char *)arg);
             break;
         case 18:
-            RKTestProductWrite();
+            if (arg == NULL) {
+                RKLog("No filename given.\n");
+                exit(EXIT_FAILURE);
+            }
+            RKTestProductRead((char *)arg);
             break;
         case 19:
-            RKTestReviseLogicalValues();
+            if (arg == NULL) {
+                RKLog("No filename given.\n");
+                exit(EXIT_FAILURE);
+            }
+            RKProductCollectionInitWithFilename((char *)arg);
             break;
         case 20:
             if (arg == NULL) {
@@ -189,10 +190,10 @@ void RKTestByNumber(const int number, const void *arg) {
             RKTestReadIQ((char *)arg);
             break;
         case 21:
-            RKTestPreparePath();
+            RKTestReviseLogicalValues();
             break;
         case 22:
-            RKTestHealthOverviewText((char *)arg);
+            RKTestPreparePath();
             break;
         case 30:
             RKTestSIMD(RKTestSIMDFlagNull);
