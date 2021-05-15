@@ -813,8 +813,11 @@ void RKTestHealthOverviewText(const char *options) {
                  ((textPreferences & RKTextPreferencesWindowSizeMask) == RKTextPreferencesWindowSize80x40 ? "RKTextPreferencesWindowSize80x50" :
                   ((textPreferences & RKTextPreferencesWindowSizeMask) == RKTextPreferencesWindowSize80x25 ? "RKTextPreferencesWindowSize80x25" : ""))))));
     }
-    RKHealthOverview(string, text, textPreferences);
-    printf("%s\n", text);
+    int m = RKHealthOverview(string, text, textPreferences);
+    printf("+--------------------------------------------------------------------+\n");
+    printf("%s", text);
+    printf("+--------------------------------------------------------------------+\n");
+    printf("%d / %d\n", (int)strlen(text), m);
     free(text);
 }
 

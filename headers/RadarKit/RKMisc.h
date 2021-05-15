@@ -163,4 +163,7 @@ long RKGetMemoryUsage(void);
 
 char *RKCountryFromPosition(const double latitude, const double longitude);
 
+char *RKStripEscapeSequence(char *);
+int RKMergeColumns(char *text, char *left, char *right);
+
 #endif /* rk_misc_h */

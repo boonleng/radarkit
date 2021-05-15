@@ -1115,3 +1115,87 @@ char *RKCountryFromPosition(const double latitude, const double longitude) {
 	#endif
 	return country;
 }
+
+char *RKStripEscapeSequence(char *line) {
+    static char string[8192];
+    int n;
+    char *e;
+    char *s = line;
+    char *d = string;
+    while (*s != '\0') {
+        e = strchr(s, '\033');
+        if (e == NULL) {
+            n = (int)strlen(s);
+            strncpy(d, s, n);
+            d += n;
+            break;
+        }
+        n = (int)(e - s);
+        if (n) {
+            strncpy(d, s, n);
+            d += n;
+        }
+        s = strchr(e, 'm');
+        if (s == NULL) {
+            fprintf(stderr, "Error. Escape sequence not balanced.\n");
+            break;
+        }
+        s++;
+    }
+    *d = '\0';
+    return string;
+}
+
+
+int RKMergeColumns(char *text, char *left, char *right) {
+    char *ls = left, *le = NULL;
+    char *rs = right, *re = NULL;
+    char *plain;
+    int m = 0, n;
+    const int w = 30; const int v = 36;
+    
+    //printf("%s--\n", right);
+    while (ls != NULL || rs != NULL) {
+        //m += sprintf(text + m, "\033[48;5;234m");
+        m += sprintf(text + m, "|  ");
+        if (ls != NULL && (le = strchr(ls, '\n')) != NULL) {
+            *le = '\0';
+            plain = RKStripEscapeSequence(ls);
+            n = (int)strlen(plain);
+            //printf("%s (%d) -> %s (%d)\n", ls, (int)(le - ls), plain, n);
+            m += sprintf(text + m, "%s", ls);
+            memset(text + m, ' ', w - n);
+            m += (w - n);
+            ls = le + 1;
+            if (*ls == '\0') {
+                ls = NULL;
+            }
+        } else {
+            if (rs != NULL) {
+                memset(text + m, ' ', w);
+                m += w;
+            }
+        }
+        if (rs != NULL && (re = strchr(rs, '\n')) != NULL) {
+            *re = '\0';
+            plain = RKStripEscapeSequence(rs);
+            n = (int)strlen(plain);
+            //printf("%s (%d) -> %s (%d) |%c|\n", rs, (int)(re - rs), plain, n, *(re + 1));
+            m += sprintf(text + m, "%s", rs);
+            memset(text + m, ' ', v - n);
+            m += (v - n);
+            rs = re + 1;
+            if (*rs == '\0') {
+                rs = NULL;
+            }
+        } else {
+            if (ls != NULL) {
+                memset(text + m, ' ', v);
+                m += v;
+            }
+        }
+        m += sprintf(text + m, "|\n");
+        //m += sprintf(text + m, "\033[49m\n");
+    }
+    return m;
+}

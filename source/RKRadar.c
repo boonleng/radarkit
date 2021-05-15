@@ -3376,7 +3376,7 @@ int RKBufferOverview(RKRadar *radar, char *text, const RKTextPreferences flag) {
     n++;
     c = RKIntegerToCommaStyleString(m);
     s = strlen(c);
-    m += sprintf(text + m, "\033[0m\033[%d;%dH== (%s) ==" RKEOL, n, (int)(terminalSize.ws_col - s - 7), c);
+    m += sprintf(text + m, "\033[m\033[%d;%dH== (%s) ==" RKEOL, n, (int)(terminalSize.ws_col - s - 7), c);
     *(text + m) = '\0';
     return m;
 }
@@ -3480,6 +3480,7 @@ int RKHealthOverview(const char *json, char *text, const RKTextPreferences flag)
     char dots[RKMaximumStringLength], labels[RKMaximumStringLength];
     char prefix[RKNameLength], posfix[RKNameLength];
     char state[4];
+    char symbol[] = "o";
     RKStatusEnum u;
 
     // Make a local copy for manipulation
@@ -3504,7 +3505,7 @@ int RKHealthOverview(const char *json, char *text, const RKTextPreferences flag)
             RKGetNextKeyValue(e, NULL, state);
             u = atoi(state);
             if (rkGlobalParameters.showColor) {
-                strcpy(posfix, RKNoColor);
+                strcpy(posfix, RKNoForegroundColor);
                 switch (u) {
                     case RKStatusEnumNormal:
                         strcpy(prefix, RKGreenColor);
@@ -3530,9 +3531,14 @@ int RKHealthOverview(const char *json, char *text, const RKTextPreferences flag)
             } else {
                 prefix[0] = '\0';
                 posfix[0] = '\0';
+                if (u == RKStatusEnumNormal) {
+                    strcpy(symbol, "o");
+                } else {
+                    strcpy(symbol, "-");
+                }
             }
             if (!strcasecmp("true", value) || !strcasecmp("false", value)) {
-                nd += sprintf(dots + nd, "%s%s%s %s\n", prefix, "●", posfix, key);
+                nd += sprintf(dots + nd, "%s%s%s %s\n", prefix, symbol, posfix, key);
             } else {
                 e = value + strlen(value) - 1;
                 if ((*value == '"' && *e == '"') || (*value == '\'' && *e == '\'')) {
@@ -3541,11 +3547,18 @@ int RKHealthOverview(const char *json, char *text, const RKTextPreferences flag)
                 } else {
                     b = value;
                 }
-                nl += sprintf(labels + nl, "%20s : %s%s%s\n", key, prefix, b, posfix);
+                nl += sprintf(labels + nl, "%22s %s%s%s\n", key, prefix, b, posfix);
             }
         }
     }
-    m = sprintf(text, "%s\n", dots);
+
+    #if defined(DEBUG_HEALTH_OVERVIEW)
+    m = sprintf(text, "%s\n\n", dots);
     m += sprintf(text + m, "%s\n", labels);
+    printf("%s", text);
+    #endif
+    
+    m = RKMergeColumns(text, dots, labels);
+
     return m;
 }
