@@ -80,6 +80,7 @@ int socketCommandHandler(RKOperator *O) {
         if ((commandStringEnd = strchr(commandString, ';')) != NULL) {
             *commandStringEnd = '\0';
         }
+        //printf("-- command -- %c %d\n", *commandString, *commandString == '\0');
         // Command 'ping' is most frequent, check this first
         if (!strncmp(commandString, "ping", 4)) {
             user->pingCount++;
@@ -104,14 +105,28 @@ int socketCommandHandler(RKOperator *O) {
                 }
             }
             user->commandCount++;
-            RKLog("%s %s Received command '%s%s%s' (%p)\n",
-                  engine->name, O->name,
-                  rkGlobalParameters.showColor ? RKGreenColor : "",
-                  commandString,
-                  rkGlobalParameters.showColor ? RKNoColor : "",
-                  commandStringEnd);
+            if (*commandString >= '!' && *commandString <= 'z') {
+                RKLog("%s %s Received command '%s%s%s' (%p)\n",
+                      engine->name, O->name,
+                      rkGlobalParameters.showColor ? RKGreenColor : "",
+                      commandString,
+                      rkGlobalParameters.showColor ? RKNoColor : "",
+                      commandStringEnd);
+            } else {
+                RKLog("%s %s Received command in hex: %s%02d %02d%s\n",
+                      engine->name, O->name,
+                      rkGlobalParameters.showColor ? RKGreenColor : "",
+                      commandString[0], commandString[1],
+                      rkGlobalParameters.showColor ? RKNoColor : "");
+            }
             // Process the command
             switch (commandString[0]) {
+                case '\15':
+                    user->streams = RKStreamNull;
+                    user->streamsInProgress = RKStreamNull;
+                    RKLog("%s %s Disconnected all streams\n", engine->name, O->name);
+                    break;
+                    
                 case 'a':
                     // Authenticate
                     sscanf(commandString + 1, "%s %s", sval1, sval2);
@@ -351,6 +366,8 @@ int socketStreamHandler(RKOperator *O) {
     gettimeofday(&t0, NULL);
     const double time = (double)t0.tv_sec + 1.0e-6 * (double)t0.tv_usec;
 
+    RKHealth *health;
+
     RKPulse *pulse;
     RKPulseHeader pulseHeader;
 
@@ -410,7 +427,7 @@ int socketStreamHandler(RKOperator *O) {
         {"\033[48;5;201m"},
         {"\033[48;5;93m"}
     };
-    if (user->radar->desc.initFlags & RKInitFlagSignalProcessor && time - user->timeLastOut >= 0.05) {
+    if (user->radar->desc.initFlags & RKInitFlagSignalProcessor && time - user->timeLastOut >= 0.08) {
         // Signal processor only - showing the latest summary text view
         #pragma mark Summary Text
         k = user->streams & user->access & RKStreamStatusMask;
@@ -525,20 +542,21 @@ int socketStreamHandler(RKOperator *O) {
             } else {
                 k = RKBufferOverview(user->string, user->radar, user->textPreferences);
             }
-            O->delimTx.type = RKNetworkPacketTypePlainText;
-            O->delimTx.size = k + 1;
+            //O->delimTx.type = RKNetworkPacketTypePlainText;
+            //O->delimTx.size = k + 1;
             // Special case to avoid character 007, which is a beep.
-            if ((O->delimTx.size & 0xFF) == 0x07) {
-                O->delimTx.size++;
-            }
-            RKOperatorSendPackets(O, &O->delimTx, sizeof(RKNetDelimiter), user->string, O->delimTx.size, NULL);
+            //if ((O->delimTx.size & 0xFF) == 0x07) {
+            //    O->delimTx.size++;
+            //}
+            //RKOperatorSendPackets(O, &O->delimTx, sizeof(RKNetDelimiter), user->string, O->delimTx.size, NULL);
+            RKOperatorSendPackets(O, user->string, k, NULL);
             user->timeLastOut = time;
             user->ticForStatusStream++;
-        } else if (k == RKStreamStatusASCIIArt) {
+        } else if (k == RKStreamASCIIArtZ) {
             // Stream "6" - ASCII art of reflectivity
             ray = RKGetLatestRayIndex(user->radar, &endIndex);
-            if ((user->streamsInProgress & RKStreamStatusMask) != RKStreamStatusASCIIArt) {
-                user->streamsInProgress = RKStreamStatusASCIIArt;
+            if ((user->streamsInProgress & RKStreamStatusMask) != RKStreamASCIIArtZ) {
+                user->streamsInProgress = RKStreamASCIIArtZ;
                 user->asciiArtStride = ray->header.gateCount / (user->terminalSize.ws_col - 20);
                 user->rayIndex = endIndex;
                 if (engine->verbose) {
@@ -550,6 +568,10 @@ int socketStreamHandler(RKOperator *O) {
                 k = 0;
                 while (user->rayIndex != endIndex && k < RKMaximumPacketSize - 200) {
                     ray = RKGetRayFromBuffer(user->radar->rays, user->rayIndex);
+                    if (!(ray->header.s & RKRayStatusReady)) {
+                        usleep(10000);
+                        continue;
+                    }
                     k += sprintf(user->string + k, "%04d %5.2f %6.2f ", (int)(ray->header.i % 1000), ray->header.startElevation, ray->header.startAzimuth);
                     // Now we paint the ASCII art
                     u8Data = RKGetUInt8DataFromRay(ray, RKBaseMomentIndexZ);
@@ -573,7 +595,7 @@ int socketStreamHandler(RKOperator *O) {
                     user->rayIndex = RKNextModuloS(user->rayIndex, user->radar->desc.rayBufferDepth);
                 }
                 O->delimTx.type = RKNetworkPacketTypePlainText;
-                O->delimTx.size = k + 1;
+                O->delimTx.size = k;
                 if (engine->verbose > 2) {
                     RKLog("%s %s delimTx = %02x %02x %02x %02x %02x %02x %02x %02x %02x %02x %02x %02x %02x %02x %02x %02x",
                           engine->name, O->name,
@@ -595,15 +617,16 @@ int socketStreamHandler(RKOperator *O) {
                           O->delimTx.bytes[15]
                           );
                 }
-                // Special case to avoid character 007, which is a beep.
-                if ((O->delimTx.size & 0xFF) == 0x07) {
-                    O->delimTx.size++;
-                }
-                if ((O->delimTx.size & 0xFF00) == 0x0700) {
-                    memset(user->string + O->delimTx.size, 0, 256);
-                    O->delimTx.size += 256;
-                }
-                RKOperatorSendPackets(O, &O->delimTx, sizeof(RKNetDelimiter), user->string, O->delimTx.size, NULL);
+                // Special case to avoid character 007, which is a beep. Almost never used.
+                //if ((O->delimTx.size & 0xFF) == 0x07) {
+                //    O->delimTx.size++;
+                //}
+                //if ((O->delimTx.size & 0xFF00) == 0x0700) {
+                //    memset(user->string + O->delimTx.size, 0, 256);
+                //    O->delimTx.size += 256;
+                //}
+                //RKOperatorSendPackets(O, &O->delimTx, sizeof(RKNetDelimiter), user->string, O->delimTx.size, NULL);
+                RKOperatorSendPackets(O, user->string, k, NULL);
                 user->timeLastOut = time;
                 user->ticForStatusStream++;
             } else if (engine->verbose) {
@@ -611,6 +634,25 @@ int socketStreamHandler(RKOperator *O) {
                 RKLog("%s %s No ray for ASCII art.  user->rayIndex = %d   endIndex = %d\n",
                       engine->name, O->name, user->rayIndex, endIndex);
             } // if (ray) ...
+        } else if (k == RKStreamASCIIArtHealth) {
+            // Stream "7" - ASCII art of reflectivity
+            if ((user->streamsInProgress & RKStreamStatusMask) != RKStreamASCIIArtHealth) {
+                user->streamsInProgress = RKStreamASCIIArtHealth;
+            }
+            health = RKGetLatestHealth(user->radar);
+            k = RKHealthOverview(user->string, health->string, user->textPreferences | RKTextPreferencesDrawBackground);
+            /*
+            O->delimTx.type = RKNetworkPacketTypePlainText;
+            O->delimTx.size = k + 1;
+            // Special case to avoid character 007, which is a beep.
+            if ((O->delimTx.size & 0xFF) == 0x07) {
+                O->delimTx.size++;
+            }
+            RKOperatorSendPackets(O, &O->delimTx, sizeof(RKNetDelimiter), user->string, O->delimTx.size, NULL);
+            */
+            RKOperatorSendPackets(O, user->string, k, NULL);
+            user->timeLastOut = time;
+            user->ticForStatusStream++;
         }
 
         // Send another set of controls if the radar controls have changed.
@@ -635,7 +677,7 @@ int socketStreamHandler(RKOperator *O) {
             RKOperatorSendPackets(O, &O->delimTx, sizeof(RKNetDelimiter), user->string, O->delimTx.size, NULL);
             user->timeLastOut = time;
         }
-    }
+    } // (user->radar->desc.initFlags & RKInitFlagSignalProcessor && time - user->timeLastOut >= 0.08) ...
 
     // For contiguous streaming:
     // If we just started a connection, grab the payload that is either:

@@ -1065,7 +1065,10 @@ RKStream RKStreamFromString(const char * string) {
                 flag = (flag & !RKStreamStatusMask) | RKStreamStatusBuffers;
                 break;
             case '6':
-                flag = (flag & !RKStreamStatusMask) | RKStreamStatusASCIIArt;
+                flag = (flag & !RKStreamStatusMask) | RKStreamASCIIArtZ;
+                break;
+            case '7':
+                flag = (flag & !RKStreamStatusMask) | RKStreamASCIIArtHealth;
                 break;
             case 'x':
                 flag |= RKStreamStatusTerminalChange;
@@ -1192,8 +1195,10 @@ int RKStringFromStream(char *string, RKStream stream) {
         j += sprintf(string + j, "4");
     } else if (stream & RKStreamStatusBuffers) {
         j += sprintf(string + j, "5");
-    } else if (stream & RKStreamStatusASCIIArt) {
+    } else if (stream & RKStreamASCIIArtZ) {
         j += sprintf(string + j, "6");
+    } else if (stream & RKStreamASCIIArtHealth) {
+        j += sprintf(string + j, "7");
     }
     if (stream & RKStreamStatusProcessorStatus) { j += sprintf(string + j, "!"); }
     if (stream & RKStreamHealthInJSON)          { j += sprintf(string + j, "h"); }

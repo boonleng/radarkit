@@ -1236,7 +1236,7 @@ char *RKGetNextKeyValue(char *json, char *key, char *value) {
 }
 
 int RKMergeColumns(char *text, const char *left, const char *right, const int indent) {
-    const int u = 30; const int v = 38;
+    const int u = 26; const int v = 38;
     char *ls = (char *)left, *le = NULL;
     char *rs = (char *)right, *re = NULL;
     int w = 0, m = 0, n;
